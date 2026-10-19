@@ -26,6 +26,17 @@ CLKCTRL.MCLKCTRLA = 0x02      (CPU selects external crystal clock)
 
 The source selections appear **internally inconsistent** and could prevent clock/timer operation. Confirm which oscillator the real board has and configure the appropriate enable and source registers in MCC before deploying. This PR deliberately does not guess the board clock hardware.
 
+## Clock diagnostic
+
+Run this read-only check on any machine with Python 3.10+:
+
+```sh
+python tools/clock_audit.py
+python tools/clock_audit.py --strict
+```
+
+The first command prints risks and exits normally for investigation. The strict form returns a nonzero exit status if it detects the known mismatched settings. Neither command flashes the MCU or changes MCC files.
+
 ## Manual verification required
 
 - Confirm CPU and RTC oscillator clock on real ATmega4809 hardware.
