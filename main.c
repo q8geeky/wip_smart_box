@@ -26,6 +26,7 @@
 #include <stdint.h>
     
 /* ISR-shared time digits. Each digit is one AVR-atomic byte. */
+volatile uint8_t pit_ticks = 0;
 volatile uint8_t second = 0;
 volatile uint8_t minute1 = 0, minute2 = 0;
 volatile uint8_t hour1 = 0, hour2 = 0;
@@ -36,10 +37,21 @@ void digit2(unsigned int nmbr);
 void digit3(unsigned int nmbr);
 void digit4(unsigned int nmbr);
 
+/* The PIT is configured for 512 RTC cycles (RTC.PITCTRLA=0x41).
+ * At a 32.768 kHz RTC clock this is 64 interrupts per second.
+ * Confirm the board's clock source and oscillator enablement before flashing.
+ */
+#define PIT_CALLBACKS_PER_SECOND 64u
+
 void RTC_PITInterrupt(void)
 {
     if(IO_PC6_GetValue() == 0)
     {
+        if (++pit_ticks < PIT_CALLBACKS_PER_SECOND)
+        {
+            return;
+        }
+        pit_ticks = 0;
         second++;
         if(second == 60)
         {
@@ -64,6 +76,7 @@ void RTC_PITInterrupt(void)
         }
     }else
     {
+        pit_ticks = 0;
         second = 0;
         minute1 = 0;
         minute2 = 0;
@@ -76,6 +89,8 @@ int main(void)
 {
     /* Initializes MCU, drivers and middleware */
     SYSTEM_Initialize();
+    /* Register the application callback used by the MCC RTC ISR. */
+    RTC_SetPITIsrCallback(RTC_PITInterrupt);
 
     /* Replace with your application code */
     while (1)
