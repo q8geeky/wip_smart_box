@@ -13,6 +13,15 @@ def read_register(source: str, register: str) -> int:
     pattern=REGISTER_PATTERN.format(register=re.escape(register))
     match=re.search(pattern,source)
     if not match:
+        # Protected AVR registers are written through Microchip's
+        # ccp_write_io((void*)&(REGISTER), VALUE) helper, not '='.
+        protected = (
+            r"ccp_write_io\\s*\\(\\s*\\(void\\*\\)\\s*&\\s*\\("
+            + re.escape(register)
+            + r"\\)\\s*,\\s*(0x[0-9A-Fa-f]+|\\d+)\\s*\\)"
+        )
+        match = re.search(protected, source)
+    if not match:
         raise ValueError(f"Missing assignment: {register}")
     return int(match.group(1),0)
 
