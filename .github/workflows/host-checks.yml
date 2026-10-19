@@ -10,3 +10,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -v
+      - name: Print read-only clock warning (no flashing)
+        run: python tools/clock_audit.py
