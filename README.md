@@ -1,33 +1,37 @@
 # Smart Box AVR Firmware
 
-An MPLAB X / Microchip Code Configurator project with a four-digit seven-segment time counter.
+Four-digit seven-segment counter firmware for the ATmega4809, based on Microchip MCC-generated drivers.
 
-## Source and build
+## Building
 
-- Application logic: `main.c`
-- Auto-generated pin, RTC and device configuration: `mcc_generated_files/`
-- MPLAB X project configuration: `nbproject/`
-- Build with the device and XC8 toolchain selected in `nbproject/configurations.xml`; do not substitute a generic desktop C compiler.
+Use MPLAB X and the XC8 AVR compiler with the device and project settings in `nbproject/configurations.xml`. The existing generated drivers retain their original license.
 
-## Correctness fixes in this branch
+## Application fixes (review branch)
 
-1. **Every digit switch now terminates its case with `break;`.** Previously all ten cases fell through, so later cases overwrote earlier segment settings.
-2. Time digits shared between the RTC interrupt and the display loop are declared `volatile uint8_t`.
-3. The main display loop reads all four digits under `ATOMIC_BLOCK(ATOMIC_RESTORESTATE)`, preventing an interrupt from producing a mixed-time display.
-4. Explicit function prototypes avoid implicit function declarations with stricter C compilers.
+- Every digit case has a `break`; the former switches unintentionally executed every later case.
+- The RTC-updated digit counters are declared `volatile uint8_t`; the display uses an atomic snapshot.
+- Register `RTC_PITInterrupt` via `RTC_SetPITIsrCallback`. The generated driver only invokes callbacks after registration.
+- `RTC.PITCTRLA=0x41` means one interrupt per **512 RTC clock cycles**, which is **64 interrupts/sec** with a 32.768 kHz RTC clock. A 64-callback divider now produces one logical second.
 
-## Hardware verification checklist
+## Critical board-clock verification before flashing
 
-The fixes have been reviewed statically but **not flashed to physical hardware**:
+The existing **generated** driver config has:
 
-- Verify seven-segment polarity (active-high vs active-low).
-- Verify `COM1`/`COM2` multiplexing behavior and brightness.
-- Confirm the RTC PIT interrupt's actual period; the software assumes one callback per second.
-- Check counting, reset input, digit transitions (09 → 10), and clock rollover.
-- Build and flash using MPLAB X + the configured XC8 toolchain.
+```text
+RTC.CLKSEL = 0x02              (external 32.768 kHz crystal source)
+RTC.PITCTRLA = 0x41            (PIT 512 cycles)
+CLKCTRL.XOSC32KCTRLA = 0x00   (external oscillator disabled)
+CLKCTRL.MCLKCTRLA = 0x02      (CPU selects external crystal clock)
+```
 
-Do not publish new production firmware binaries until that review succeeds. Generated files and historical build artifacts are retained on this branch for comparison.
+The source selections appear **internally inconsistent** and could prevent clock/timer operation. Confirm which oscillator the real board has and configure the appropriate enable and source registers in MCC before deploying. This PR deliberately does not guess the board clock hardware.
 
-## Repository hygiene
+## Manual verification required
 
-`.gitignore` prevents *new* build products and IDE-private settings from being committed. It does not retroactively remove previously tracked files.
+- Confirm CPU and RTC oscillator clock on real ATmega4809 hardware.
+- Verify seven-segment polarity, COM1/COM2 multiplexing, brightness.
+- Verify PC6 reset and one displayed minute against real time.
+- Verify rollover behavior (09→10, 59→60 and 99 hours if relevant).
+- Build/flash with XC8; the hosted static source checks are not an embedded build.
+
+The existing generated files, pins and historical binary artifacts were not changed. `.gitignore` only excludes future build output.
