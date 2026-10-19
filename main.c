@@ -22,10 +22,19 @@
 */
     
 #include "mcc_generated_files/mcc.h"
+#include <util/atomic.h>
+#include <stdint.h>
     
-unsigned int second = 0;
-unsigned int minute1, minute2 = 0;
-unsigned int hour1, hour2 = 0;
+/* ISR-shared time digits. Each digit is one AVR-atomic byte. */
+volatile uint8_t second = 0;
+volatile uint8_t minute1 = 0, minute2 = 0;
+volatile uint8_t hour1 = 0, hour2 = 0;
+
+void display_control(unsigned int h1, unsigned int h2, unsigned int m1, unsigned int m2);
+void digit1(unsigned int nmbr);
+void digit2(unsigned int nmbr);
+void digit3(unsigned int nmbr);
+void digit4(unsigned int nmbr);
 
 void RTC_PITInterrupt(void)
 {
@@ -71,7 +80,16 @@ int main(void)
     /* Replace with your application code */
     while (1)
     {
-        display_control(hour1, hour2, minute1, minute2);
+        /* Read the ISR-updated 4-digit counter as one consistent snapshot. */
+        uint8_t h1, h2, m1, m2;
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+        {
+            h1 = hour1;
+            h2 = hour2;
+            m1 = minute1;
+            m2 = minute2;
+        }
+        display_control(h1, h2, m1, m2);
     }
 }
 
@@ -102,6 +120,7 @@ void digit1(unsigned int nmbr){
             SEG1F_SetHigh();
             
             SEG1G_SetLow();
+            break;
         
         case 1:
             SEG1B_SetHigh();
@@ -112,6 +131,7 @@ void digit1(unsigned int nmbr){
             SEG1F_SetLow();
             SEG1E_SetLow();
             SEG1D_SetLow();
+            break;
             
         case 2:
             SEG1A_SetHigh();
@@ -122,6 +142,7 @@ void digit1(unsigned int nmbr){
             
             SEG1F_SetLow();
             SEG1C_SetLow();   
+            break;
             
         case 3:
             SEG1A_SetHigh();
@@ -132,6 +153,7 @@ void digit1(unsigned int nmbr){
             
             SEG1F_SetLow();
             SEG1E_SetLow();
+            break;
             
         case 4:
             SEG1F_SetHigh();
@@ -142,6 +164,7 @@ void digit1(unsigned int nmbr){
             SEG1A_SetLow();
             SEG1E_SetLow();
             SEG1D_SetLow();
+            break;
             
         case 5:
             SEG1A_SetHigh();
@@ -152,6 +175,7 @@ void digit1(unsigned int nmbr){
             
             SEG1B_SetLow();
             SEG1E_SetLow();
+            break;
             
         case 6:
             SEG1A_SetHigh();
@@ -162,6 +186,7 @@ void digit1(unsigned int nmbr){
             SEG1E_SetHigh();
             
             SEG1B_SetLow();
+            break;
             
         case 7:
             SEG1A_SetHigh();
@@ -172,6 +197,7 @@ void digit1(unsigned int nmbr){
             SEG1G_SetLow();
             SEG1E_SetLow();
             SEG1D_SetLow();
+            break;
             
         case 8:
             SEG1A_SetHigh();
@@ -181,6 +207,7 @@ void digit1(unsigned int nmbr){
             SEG1D_SetHigh();
             SEG1E_SetHigh();
             SEG1B_SetHigh();
+            break;
             
         case 9:
             SEG1A_SetHigh();
@@ -191,6 +218,8 @@ void digit1(unsigned int nmbr){
             SEG1B_SetHigh();
             
             SEG1E_SetLow();
+            break;
+
     }
 }
 
@@ -207,6 +236,7 @@ void digit2(unsigned int nmbr){
             SEG2F_SetHigh();
             
             SEG2G_SetLow();
+            break;
         
         case 1:
             SEG2B_SetHigh();
@@ -217,6 +247,7 @@ void digit2(unsigned int nmbr){
             SEG2F_SetLow();
             SEG2E_SetLow();
             SEG2D_SetLow();
+            break;
             
         case 2:
             SEG2A_SetHigh();
@@ -227,6 +258,7 @@ void digit2(unsigned int nmbr){
             
             SEG2F_SetLow();
             SEG2C_SetLow();   
+            break;
             
         case 3:
             SEG2A_SetHigh();
@@ -237,6 +269,7 @@ void digit2(unsigned int nmbr){
             
             SEG2F_SetLow();
             SEG2E_SetLow();
+            break;
             
         case 4:
             SEG2F_SetHigh();
@@ -247,6 +280,7 @@ void digit2(unsigned int nmbr){
             SEG2A_SetLow();
             SEG2E_SetLow();
             SEG2D_SetLow();
+            break;
             
         case 5:
             SEG2A_SetHigh();
@@ -257,6 +291,7 @@ void digit2(unsigned int nmbr){
             
             SEG2B_SetLow();
             SEG2E_SetLow();
+            break;
             
         case 6:
             SEG2A_SetHigh();
@@ -267,6 +302,7 @@ void digit2(unsigned int nmbr){
             SEG2E_SetHigh();
             
             SEG2B_SetLow();
+            break;
             
         case 7:
             SEG2A_SetHigh();
@@ -277,6 +313,7 @@ void digit2(unsigned int nmbr){
             SEG2G_SetLow();
             SEG2E_SetLow();
             SEG2D_SetLow();
+            break;
             
         case 8:
             SEG2A_SetHigh();
@@ -286,6 +323,7 @@ void digit2(unsigned int nmbr){
             SEG2D_SetHigh();
             SEG2E_SetHigh();
             SEG2B_SetHigh();
+            break;
             
         case 9:
             SEG2A_SetHigh();
@@ -296,6 +334,8 @@ void digit2(unsigned int nmbr){
             SEG2B_SetHigh();
             
             SEG2E_SetLow();
+            break;
+
     }
 }
 
@@ -312,6 +352,7 @@ void digit3(unsigned int nmbr){
             SEG3F_SetHigh();
             
             SEG3G_SetLow();
+            break;
         
         case 1:
             SEG3B_SetHigh();
@@ -322,6 +363,7 @@ void digit3(unsigned int nmbr){
             SEG3F_SetLow();
             SEG3E_SetLow();
             SEG3D_SetLow();
+            break;
             
         case 2:
             SEG3A_SetHigh();
@@ -332,6 +374,7 @@ void digit3(unsigned int nmbr){
             
             SEG3F_SetLow();
             SEG3C_SetLow();   
+            break;
             
         case 3:
             SEG3A_SetHigh();
@@ -342,6 +385,7 @@ void digit3(unsigned int nmbr){
             
             SEG3F_SetLow();
             SEG3E_SetLow();
+            break;
             
         case 4:
             SEG3F_SetHigh();
@@ -352,6 +396,7 @@ void digit3(unsigned int nmbr){
             SEG3A_SetLow();
             SEG3E_SetLow();
             SEG3D_SetLow();
+            break;
             
         case 5:
             SEG3A_SetHigh();
@@ -362,6 +407,7 @@ void digit3(unsigned int nmbr){
             
             SEG3B_SetLow();
             SEG3E_SetLow();
+            break;
             
         case 6:
             SEG3A_SetHigh();
@@ -372,6 +418,7 @@ void digit3(unsigned int nmbr){
             SEG3E_SetHigh();
             
             SEG3B_SetLow();
+            break;
             
         case 7:
             SEG3A_SetHigh();
@@ -382,6 +429,7 @@ void digit3(unsigned int nmbr){
             SEG3G_SetLow();
             SEG3E_SetLow();
             SEG3D_SetLow();
+            break;
             
         case 8:
             SEG3A_SetHigh();
@@ -391,6 +439,7 @@ void digit3(unsigned int nmbr){
             SEG3D_SetHigh();
             SEG3E_SetHigh();
             SEG3B_SetHigh();
+            break;
             
         case 9:
             SEG3A_SetHigh();
@@ -401,6 +450,8 @@ void digit3(unsigned int nmbr){
             SEG3B_SetHigh();
             
             SEG3E_SetLow();
+            break;
+
     }
 }
 
@@ -417,6 +468,7 @@ void digit4(unsigned int nmbr){
             SEG4F_SetHigh();
             
             SEG4G_SetLow();
+            break;
         
         case 1:
             SEG4B_SetHigh();
@@ -427,6 +479,7 @@ void digit4(unsigned int nmbr){
             SEG4F_SetLow();
             SEG4E_SetLow();
             SEG4D_SetLow();
+            break;
             
         case 2:
             SEG4A_SetHigh();
@@ -437,6 +490,7 @@ void digit4(unsigned int nmbr){
             
             SEG4F_SetLow();
             SEG4C_SetLow();   
+            break;
             
         case 3:
             SEG4A_SetHigh();
@@ -447,6 +501,7 @@ void digit4(unsigned int nmbr){
             
             SEG4F_SetLow();
             SEG4E_SetLow();
+            break;
             
         case 4:
             SEG4F_SetHigh();
@@ -457,6 +512,7 @@ void digit4(unsigned int nmbr){
             SEG4A_SetLow();
             SEG4E_SetLow();
             SEG4D_SetLow();
+            break;
             
         case 5:
             SEG4A_SetHigh();
@@ -467,6 +523,7 @@ void digit4(unsigned int nmbr){
             
             SEG4B_SetLow();
             SEG4E_SetLow();
+            break;
             
         case 6:
             SEG4A_SetHigh();
@@ -477,6 +534,7 @@ void digit4(unsigned int nmbr){
             SEG4E_SetHigh();
             
             SEG4B_SetLow();
+            break;
             
         case 7:
             SEG4A_SetHigh();
@@ -487,6 +545,7 @@ void digit4(unsigned int nmbr){
             SEG4G_SetLow();
             SEG4E_SetLow();
             SEG4D_SetLow();
+            break;
             
         case 8:
             SEG4A_SetHigh();
@@ -496,6 +555,7 @@ void digit4(unsigned int nmbr){
             SEG4D_SetHigh();
             SEG4E_SetHigh();
             SEG4B_SetHigh();
+            break;
             
         case 9:
             SEG4A_SetHigh();
@@ -506,6 +566,8 @@ void digit4(unsigned int nmbr){
             SEG4B_SetHigh();
             
             SEG4E_SetLow();
+            break;
+
     }
 }
 /**
